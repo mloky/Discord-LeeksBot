@@ -1,5 +1,12 @@
-# Work with Python 3.6
+# Works with Python 3.6
 #3.7 does not support async/await
+
+##V1.0.2
+##-Added Jan Update commands
+##
+##V1.0.1
+##-Initial upload to git
+##-Moved discord/external tokens and configurations to local file
 
 from __future__ import print_function
 from googleapiclient.discovery import build
