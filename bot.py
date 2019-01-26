@@ -1,6 +1,11 @@
 # Works with Python 3.6
 #3.7 does not support async/await
 
+##V1.0.3
+##-Broadcast message command for all servesr to be added
+##-Force refresh of loading tokens and sensitive information to be added
+##-Force remove bot from certain servers to be looked into
+##
 ##V1.0.2
 ##-Added Jan Update commands
 ##
@@ -9,9 +14,13 @@
 ##-Moved discord/external tokens and configurations to local file
 
 from __future__ import print_function
+import pickle
+import os.path
 from googleapiclient.discovery import build
-from httplib2 import Http
-from oauth2client import file, client, tools
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+#from httplib2 import Http
+#from oauth2client import file, client, tools
 import json
 import discord
 import logging
@@ -37,12 +46,32 @@ SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
 SPREADSHEET_ID = config['main_spreadsheet']
 EXPLORER_SHEETS_ID = config['xplorer_spreadsheet']
 
-store = file.Storage('token.json')
-creds = store.get()
-if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
-    creds = tools.run_flow(flow, store)
-service = build('sheets', 'v4', http=creds.authorize(Http()))
+creds = None
+# The file token.pickle stores the user's access and refresh tokens, and is
+# created automatically when the authorization flow completes for the first
+# time.
+if os.path.exists('token.pickle'):
+    with open('token.pickle', 'rb') as token:
+        creds = pickle.load(token)
+# If there are no (valid) credentials available, let the user log in.
+if not creds or not creds.valid:
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    else:
+        flow = InstalledAppFlow.from_client_secrets_file(
+            'credentials.json', SCOPES)
+        creds = flow.run_local_server()
+    # Save the credentials for the next run
+    with open('token.pickle', 'wb') as token:
+        pickle.dump(creds, token)
+
+##store = file.Storage('token.json')
+##creds = store.get()
+##if not creds or creds.invalid:
+##    flow = client.flow_from_clientsecrets('credentials.json', SCOPES)
+##    creds = tools.run_flow(flow, store)
+            
+service = build('sheets', 'v4', credentials=creds)
 #----------------------------------------
 def royalstyle():
     sheet = service.spreadsheets()
@@ -299,8 +328,7 @@ interval=0
 membersDict = {}
 serversDict = {}
 
-#check if server exist in dictionary, else prompt owner to initialize
-#mostly to deal with newly added servers
+#check if server exist in dictionary, so as to not trigger yet until owner initiates
 def serverexist(m):
         if (m.server.id in serversDict):
             return True
@@ -491,8 +519,67 @@ async def on_message(message):
             await discClient.send_message(message.channel,msg)
         await discClient.send_message(message.channel, '{} message(s) have been purged'.format(len(deleted)))
 
+    #To be used by owner of bot. Broadcasts message across all servers
+    #Main intention is to inform users of any downtime/maintenance/status of bot
+        
+    if message.content.startswith('!broadcast'):
+        if not message.author.id == BOT_OWNER_ID:
+            return
+                
+        await discClient.send_message(message.channel,'Type your message now.\nUse !cancel to cancel broadcast.')
+        msgtobroadcast = await discClient.wait_for_message(author=message.author)
+
+        #check if cancelled by owner
+        if msgtobroadcast.content.startswith('!cancel'):
+            await discClient.send_message(message.channel,'Broadcast cancelled')
+            return
+
+        tempmsg = 'Please check if message is correct.\n'+\
+                  msgtobroadcast.content+'\nType \'Yes\' to confirm. Confirmation expires in 10 seconds'
+
+        print (tempmsg)
+        print (msgtobroadcast.role_mentions)
+
+        await discClient.send_message(message.channel,tempmsg)
+        tempmsg = await discClient.wait_for_message(author=message.author,content='Yes',timeout=10)
+        if tempmsg == None:
+            await discClient.send_message(message.channel,'Broadcast cancelled due to timeout')
+            return
+
+        #Start broadcast
+        #Get list of servers
+        for server in discClient.servers:
+            #flag to see if at least one message posted in a server, temp string
+            posted=False
+            tempstring=''
+            #Get list of channels
+            for channel in server.channels:
+                #Check if voice or text
+                print (channel.type)
+                if (channel.type == discord.ChannelType.text):
+                    print ('in')
+                    #Check for permissions
+                    if checkperms(server.me,channel):
+                        if (channel.permissions_for(server.me).mention_everyone):
+                            tempstring = '@everyone\n'+msgtobroadcast.content
+                        else:
+                            tempstring = msgtobroadcast.content
+                        await discClient.send_message(channel,tempstring)
+                        await asyncio.sleep(0.3)
+                        posted=True
+            #If no message posted in server, send message to owner instead
+            if not posted:
+                try:
+                    await discClient.send_message(server.owner,msgtobroadcast.content)
+                except discord.Forbidden:
+                    print ('Forbidden to message user')
+                await asyncio.sleep(0.3)
+                
+
+        
+    
     #Jan update commands--------------------------
-    if message.content.startswith('!jan'):
+    if message.content.startswith('!3xp'):
         if not message.author.id == BOT_OWNER_ID:
             return
         if 'emblem' in message.content:
