@@ -2,11 +2,15 @@
 #3.7 does not play well with async/await
 
 ##V1.0.5
+##-Changed most of command prefix from ! to ? so as to not clash with most public bots
+##  -To do: Change all to ?
 ##-Storing data taken from sheets into memory
 ##  -To reduce GET requests but increases mem usage
 ##  -Should help response time of bot to user requests
 ##-Force update command added to force refresh data in case of any updates
+##-DM bot for feedback added
 ##-Added images to data
+##-Force refresh of loading tokens and sensitive information added to fupdate
 ##
 ##V1.0.4
 ##-Broadcast command added, @everyone included for channels with permission
@@ -17,14 +21,14 @@
 ##  -This should reduce the mem usage
 ##  -Command to print timestamps added
 ##-To be added:
-##  -DM bot for feedback
+##  -DM bot for feedback (v1.0.5)
 ##  -A way to reboot bot instead of killing
 ##-Consideration to rewrite to discord.py-rewrite branch
-##
 ##-Added mention for embed responses to user commands
+##
 ##V1.0.3
 ##-Broadcast message command for all servesr to be added
-##-Force refresh of loading tokens and sensitive information to be added
+##-Force refresh of loading tokens and sensitive information to be added (v1.0.5)
 ##-Force remove bot from certain servers to be looked into
 ##
 ##V1.0.2
@@ -144,15 +148,15 @@ def goldenapple(fupd):
         msgTitle = gappleperiod
         em = discord.Embed(title=msgTitle, description=msg, colour=0x32FF32)
         if not gappleperiod=='No data available':
-            em.set_image(url=config['ga1'])
+            em.set_image(url=config['ga'])
         em.set_author(name='Golden Apple', icon_url=discClient.user.default_avatar_url)
         return em
     
     sheet = service.spreadsheets()
     availableGapple1 = 'GoldApple!B2:E2'
-    listGapple1 = 'GoldApple!I3:28'
-    availableGapple2 = 'GoldApple!B37:E37'
-    listGapple2 = 'GoldApple!I30:I'
+    listGapple1 = 'GoldApple!I3:30'
+    availableGapple2 = 'GoldApple!B31:E31'
+    listGapple2 = 'GoldApple!I32:I'
     msg = ''
     #Check if gapples available
     result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
@@ -180,7 +184,7 @@ def goldenapple(fupd):
             msg = msg + '\n' + ('%s'%row[0])
 
     em = discord.Embed(title=msgTitle, description=msg, colour=0x32FF32)
-    em.set_image(url=config['ga1'])
+    em.set_image(url=config['ga'])
     em.set_author(name='Golden Apple', icon_url=discClient.user.default_avatar_url)
     gapplevalues=msg
     return em
@@ -316,12 +320,38 @@ def infocheck(fupd):
 
 def xplorer(command,fupd):
     sheet = service.spreadsheets()
+    xtramsg=''
+    
     if command == 'emblem':
-        r = 'Emblem!A2:H12'
+        r = 'Emblem!A2:H30'
         msgTitle='Emblem'
-    elif command == 'exalt':
-        r = 'Exalt!A2:C45'
-        msgTitle='Exalt'
+    elif command == 'sf':
+        r = 'SF!A2:C40'
+        msgTitle='SF'
+    elif command == 'mf':
+        r = 'Moonlight!F:F'
+        msgTitle='Moonlight Fragments'
+        xtramsg = '\n\nAppend \'shop\' to the command to view shop list'   
+    elif command == 'mfshop':
+        r = 'Moonlight!B:E'
+        msgTitle='MF Shop'
+    elif command == 'dk':
+        r = 'Detective!A:A'
+        msgTitle='Detective Kemdi'
+        xtramsg = '\n\nAppend \'shop\' to the command to view shop list'
+    elif command == 'dkshop':
+        r = 'Detective!F:J'
+        msgTitle='DK Shop'
+    elif command == 'gr':
+        msgTitle = 'Gordon Ridge'
+        r = 'Gordon!A1:C30'
+        xtramsg = '\n\nAppend \'shop\' to the command to view shop list\nAppend \'recipe\' to the command for recipe list'
+    elif command == 'grshop':
+        msgTitle = 'GR Shop'
+        r='Gordon!G1:K16'
+    elif command == 'grrecipe':
+        msgTitle = 'GR Recipes'
+        r='Gordon!A38:F50'
     elif command == 'all':
         msgTitle='All updates'
         return #to be updated
@@ -338,7 +368,11 @@ def xplorer(command,fupd):
             i+=1
         msg+='\n'
 
+    msg+=xtramsg
     em = discord.Embed(title=msgTitle, description=msg, colour=0x0000FF)
+    if (command == 'mf'):
+        em.set_image(url=config['mfpony'])
+
     em.set_author(name='3xplorer Update', icon_url=discClient.user.default_avatar_url)
 
     return em
@@ -525,13 +559,13 @@ async def on_message(message):
             await discClient.send_message(message.channel, msg)            
             return
     
-    if message.content.startswith('!help'):
-        msg = 'Available commands:\n!help\n!hello\n!test\n!royalstyle\n!goldenapple\n!royalhair\n!events\n!info'
+    if message.content.startswith('?help'):
+        msg = 'Available commands:\n?help\n?hello\n?feedback\n?royalstyle\n?goldenapple\n?royalhair\n?events\n?info'
         #msg = 'Available commands:\n!help\n!hello\n!test'
         await discClient.send_message(message.channel, msg)
 
     if message.content.startswith('!end'):
-        if message.author == message.server.owner:
+        if message.author.id == BOT_OWNER_ID:
             print ('closing')
             await discClient.close()
         else:
@@ -543,7 +577,13 @@ async def on_message(message):
         await discClient.send_message(message.channel,msg)
         serversDict[message.server.id][message.author.id]=message.timestamp
 
-    if message.content.startswith('!hello'):
+    if str.lower(message.content).startswith('?happy'):
+        if ('new' in str.lower(message.content) and 'year' in str.lower(message.content)) or ('cny' in str.lower(message.content)):
+            msg = 'Happy CNY! '+'{0.author.mention}'.format(message)+ ' Gong Xi Fa Cai!'
+            await discClient.send_message(message.channel,msg)
+            return
+
+    if message.content.startswith('?hello'):
         await discClient.send_typing(message.channel)
         if message.author.id in serversDict[message.server.id]:
             if not (message.timestamp - serversDict[message.server.id][message.author.id])>datetime.timedelta(seconds=5):
@@ -555,15 +595,15 @@ async def on_message(message):
         await discClient.send_message(message.channel, msg)
         serversDict[message.server.id][message.author.id]=message.timestamp
         
-    if message.content.startswith('!test'):
-        if not (serverexist):            
-            return
-        await discClient.send_typing(message.channel)
-        msg = 'This is a test message for {0.author.mention}'.format(message)        
-        await discClient.send_message(message.channel, msg)
-        serversDict[message.server.id][message.author.id]=message.timestamp
+##    if message.content.startswith('?test'):
+##        if not (serverexist):            
+##            return
+##        await discClient.send_typing(message.channel)
+##        msg = 'This is a test message for {0.author.mention}'.format(message)        
+##        await discClient.send_message(message.channel, msg)
+##        serversDict[message.server.id][message.author.id]=message.timestamp
             
-    if message.content.startswith('!royalstyle'):
+    if message.content.startswith('?royalstyle'):
         if not (serverexist):            
             return
         await discClient.send_typing(message.channel)
@@ -576,7 +616,7 @@ async def on_message(message):
             await discClient.send_message(message.channel, content = msg, embed=em)
         serversDict[message.server.id][message.author.id]=message.timestamp
         
-    if message.content.startswith('!goldenapple'):
+    if message.content.startswith('?goldenapple'):
         if not (serverexist):            
             return
         await discClient.send_typing(message.channel)
@@ -589,7 +629,7 @@ async def on_message(message):
             await discClient.send_message(message.channel, content=msg, embed=em)            
         serversDict[message.server.id][message.author.id]=message.timestamp
         
-    if message.content.startswith('!royalhair'):
+    if message.content.startswith('?royalhair'):
         if not (serverexist):            
             return
         await discClient.send_typing(message.channel)
@@ -603,7 +643,7 @@ async def on_message(message):
             await discClient.send_message(message.channel, content=msg, embed=em)
         serversDict[message.server.id][message.author.id]=message.timestamp
         
-    if message.content.startswith('!events'):
+    if message.content.startswith('?events'):
         if not (serverexist):            
             return
         await discClient.send_typing(message.channel)
@@ -617,7 +657,7 @@ async def on_message(message):
             await discClient.send_message(message.channel, content=msg, embed=em)
         serversDict[message.server.id][message.author.id]=message.timestamp
         
-    if message.content.startswith('!info'):
+    if message.content.startswith('?info'):
         if not (serverexist):            
             return
         await discClient.send_typing(message.channel)
@@ -626,10 +666,10 @@ async def on_message(message):
         await discClient.send_message(message.channel, content=msg, embed=em)
         serversDict[message.server.id][message.author.id]=message.timestamp
 
-    if message.content.startswith('!feedback'):
+    if message.content.startswith('?feedback'):
         await discClient.send_message(message.channel,'Leaving a feedback? Just slide into my DMs :kissing_heart:')
 
-    if message.content.startswith('!deletebotmsg'):
+    if message.content.startswith('?deletebotmsg'):
         if not (serverexist):            
             return
         if message.author == message.server.owner:
@@ -642,7 +682,7 @@ async def on_message(message):
                 return
         await discClient.send_message(message.channel, '{} message(s) have been purged'.format(len(deleted)))
         
-    if message.content.startswith('!deleteall'):
+    if message.content.startswith('?deleteall'):
         if not (serverexist):            
             return
         if message.author==message.server.owner:
@@ -667,7 +707,7 @@ async def on_message(message):
     #To be used by owner of bot. Broadcasts message across all servers
     #Main intention is to inform users of any downtime/maintenance/status of bot
         
-    if message.content.startswith('!broadcast'):
+    if message.content.startswith('?broadcast'):
         if not message.author.id == BOT_OWNER_ID:
             return
                 
@@ -675,7 +715,7 @@ async def on_message(message):
         msgtobroadcast = await discClient.wait_for_message(author=message.author)
 
         #check if cancelled by owner
-        if msgtobroadcast.content.startswith('!cancel'):
+        if msgtobroadcast.content.startswith('?cancel'):
             await discClient.send_message(message.channel,'Broadcast cancelled')
             return
 
@@ -720,7 +760,7 @@ async def on_message(message):
                     print ('Forbidden to message user')
                 await asyncio.sleep(0.3)
 
-    if message.content.startswith('!ctime'):
+    if message.content.startswith('?ctime'):
         if not message.author.id == BOT_OWNER_ID:
             return
         for servers in serversDict:
@@ -730,13 +770,13 @@ async def on_message(message):
                         
     
     #Jan update commands--------------------------
-    if message.content.startswith('!3xp'):
-        if not message.author.id == BOT_OWNER_ID:
-            return
+    if message.content.startswith('?3xp'):
+        #if not message.author.id == BOT_OWNER_ID:
+            #return
         if 'emblem' in message.content:
             em = xplorer('emblem',fupdate)
-        elif 'exalt' in message.content:
-            em = xplorer('exalt',fupdate)
+        elif 'sf' in message.content:
+            em = xplorer('sf',fupdate)
         else:
             await discClient.send_message(message.channel, 'Argument missing')
             await discClient.delete_message(message)
@@ -750,6 +790,56 @@ async def on_message(message):
             await discClient.send_message(message.channel, content=msg, embed=em)
             await discClient.delete_message(message)
         serversDict[message.server.id][message.author.id]=message.timestamp
+
+    if str.lower(message.content).startswith('?mf'):
+        if 'shop' in message.content:
+            em = xplorer('mfshop',fupdate)
+        else:
+            em = xplorer('mf',fupdate)
+        if not em:
+            msg = 'No data available'
+            await discClient.send_message(message.channel,msg)
+            await discClient.delete_message(message)
+        else:
+            msg='{0.author.mention}'.format(message)
+            await discClient.send_message(message.channel, content=msg, embed=em)
+            await discClient.delete_message(message)
+        serversDict[message.server.id][message.author.id]=message.timestamp
+
+    if str.lower(message.content).startswith('?dk'):
+        if not message.author.id == BOT_OWNER_ID:
+            return
+        if 'shop' in message.content:
+            em = xplorer('dkshop',fupdate)
+        else:
+            em = xplorer('dk',fupdate)
+        if not em:
+            msg = 'No data available'
+            await discClient.send_message(message.channel,msg)
+            await discClient.delete_message(message)
+        else:
+            msg='{0.author.mention}'.format(message)
+            await discClient.send_message(message.channel, content=msg, embed=em)
+            await discClient.delete_message(message)
+        serversDict[message.server.id][message.author.id]=message.timestamp
+
+    if str.lower(message.content).startswith('?gr'):
+        if 'shop' in message.content:
+            em = xplorer('grshop',fupdate)
+        elif 'recipe' in message.content:
+            em = xplorer('grrecipe',fupdate)
+        else:
+            em = xplorer('gr',fupdate)
+        if not em:
+            msg = 'No data available'
+            await discClient.send_message(message.channel,msg)
+            await discClient.delete_message(message)
+        else:
+            msg='{0.author.mention}'.format(message)
+            await discClient.send_message(message.channel, content=msg, embed=em)
+            await discClient.delete_message(message)
+        serversDict[message.server.id][message.author.id]=message.timestamp
+
     
 @discClient.event
 async def on_member_join(member):
