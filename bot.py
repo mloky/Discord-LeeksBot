@@ -322,26 +322,13 @@ def xplorer(command,fupd):
     sheet = service.spreadsheets()
     xtramsg=''
     
-    if command == 'emblem':
-        r = 'Emblem!A2:H30'
-        msgTitle='Emblem'
-    elif command == 'sf':
-        r = 'SF!A2:C40'
-        msgTitle='SF'
-    elif command == 'mf':
+    if command == 'mf':
         r = 'Moonlight!F:F'
         msgTitle='Moonlight Fragments'
         xtramsg = '\n\nAppend \'shop\' to the command to view shop list'   
     elif command == 'mfshop':
         r = 'Moonlight!B:E'
         msgTitle='MF Shop'
-    elif command == 'dk':
-        r = 'Detective!A:A'
-        msgTitle='Detective Kemdi'
-        xtramsg = '\n\nAppend \'shop\' to the command to view shop list'
-    elif command == 'dkshop':
-        r = 'Detective!F:J'
-        msgTitle='DK Shop'
     elif command == 'gr':
         msgTitle = 'Gordon Ridge'
         r = 'Gordon!A1:C30'
@@ -352,9 +339,6 @@ def xplorer(command,fupd):
     elif command == 'grrecipe':
         msgTitle = 'GR Recipes'
         r='Gordon!A38:F50'
-    elif command == 'all':
-        msgTitle='All updates'
-        return #to be updated
     msg =''
     #Check xplorer update available
     result = sheet.values().get(spreadsheetId=EXPLORER_SHEETS_ID,
@@ -458,7 +442,7 @@ def serverexist(m):
 
 def servererror(check):
     if (check):
-        return 'Please use \!start in a channel in {0} to initialize bot'
+        return 'Please use \?start in a channel in {0} to initialize bot'
     else:
         return
     
@@ -489,7 +473,7 @@ async def on_message(message):
     if message.author.bot:
         return    
     #initialize bot to start only if command given (only needs to be done once per server)
-    if (message.content == '!start'):
+    if (message.content == '?start'):
         if (serverexist(message)):            
             return
         if not (message.author==message.server.owner):
@@ -572,16 +556,16 @@ async def on_message(message):
             print ('failed')
             await discClient.send_message(message.channel, '{0.author.mention}, looks like you don\'t have permission to do that'.format(message))
             
-    if 'leeks' in message.content and message.content.startswith('!give'):
+    if 'leeks' in message.content and message.content.startswith('?give'):
         msg = 'I haz leeks... if you have shinies...'
         await discClient.send_message(message.channel,msg)
         serversDict[message.server.id][message.author.id]=message.timestamp
 
-    if str.lower(message.content).startswith('?happy'):
-        if ('new' in str.lower(message.content) and 'year' in str.lower(message.content)) or ('cny' in str.lower(message.content)):
-            msg = 'Happy CNY! '+'{0.author.mention}'.format(message)+ ' Gong Xi Fa Cai!'
-            await discClient.send_message(message.channel,msg)
-            return
+##    if str.lower(message.content).startswith('?happy'):
+##        if ('valentines' in str.lower(message.content)):
+##            msg = 'Happy Valentines! '+'{0.author.mention}'.format(message)+':heart:'
+##            await discClient.send_message(message.channel,msg)
+##            return
 
     if message.content.startswith('?hello'):
         await discClient.send_typing(message.channel)
@@ -667,7 +651,7 @@ async def on_message(message):
         serversDict[message.server.id][message.author.id]=message.timestamp
 
     if message.content.startswith('?feedback'):
-        await discClient.send_message(message.channel,'Leaving a feedback? Just slide into my DMs :kissing_heart:')
+        await discClient.send_message(message.channel,'Spot a bug? Leaving feedback? Drop a DM to the bot or submit them here\: discord.gg\/HYWn5bT')
 
     if message.content.startswith('?deletebotmsg'):
         if not (serverexist):            
@@ -767,52 +751,40 @@ async def on_message(message):
             print (serversDict[servers])
             for mems in serversDict[servers]:
                 print (str(serversDict[servers][mems]))
+
+    if message.content.startswith('!serverlist'):
+        if not message.author.id == BOT_OWNER_ID:
+            return
+        msg=''
+        for server in discClient.servers:
+            msg = msg + server.id + ',' + server.name +'\n'
+
+        await discClient.send_message(message.channel,msg)
+        return
+
+    if message.content.startswith('!leave'):
+        if not message.author.id == BOT_OWNER_ID:
+            return
+        cmd = message.content.split()
+        print (cmd[1])
+        for server in discClient.servers:
+            if server.id == cmd[1]:
+                msg = 'Leeks Seller has been forced out of '+server.name+'\nTo request for info, please head to discord.gg\/HYWn5bT'
+                await discClient.leave_server(server)
+                await discClient.send_message(server.owner,msg)
+                print ('Left '+server.id+','+server.name)
+                break
+        return
+            
                         
     
     #Jan update commands--------------------------
-    if message.content.startswith('?3xp'):
-        #if not message.author.id == BOT_OWNER_ID:
-            #return
-        if 'emblem' in message.content:
-            em = xplorer('emblem',fupdate)
-        elif 'sf' in message.content:
-            em = xplorer('sf',fupdate)
-        else:
-            await discClient.send_message(message.channel, 'Argument missing')
-            await discClient.delete_message(message)
-            return
-        if not em:
-            msg = 'No data exist!'
-            await discClient.send_message(message.channel, msg)
-            await discClient.delete_message(message)
-        else:
-            msg='{0.author.mention}'.format(message)
-            await discClient.send_message(message.channel, content=msg, embed=em)
-            await discClient.delete_message(message)
-        serversDict[message.server.id][message.author.id]=message.timestamp
 
     if str.lower(message.content).startswith('?mf'):
         if 'shop' in message.content:
             em = xplorer('mfshop',fupdate)
         else:
             em = xplorer('mf',fupdate)
-        if not em:
-            msg = 'No data available'
-            await discClient.send_message(message.channel,msg)
-            await discClient.delete_message(message)
-        else:
-            msg='{0.author.mention}'.format(message)
-            await discClient.send_message(message.channel, content=msg, embed=em)
-            await discClient.delete_message(message)
-        serversDict[message.server.id][message.author.id]=message.timestamp
-
-    if str.lower(message.content).startswith('?dk'):
-        if not message.author.id == BOT_OWNER_ID:
-            return
-        if 'shop' in message.content:
-            em = xplorer('dkshop',fupdate)
-        else:
-            em = xplorer('dk',fupdate)
         if not em:
             msg = 'No data available'
             await discClient.send_message(message.channel,msg)
@@ -885,12 +857,12 @@ async def on_channel_update(before,after):
     
 @discClient.event
 async def on_server_remove(server):
-    global serversDict
-    msg = 'You have removed %s'%discClient.user.name+' from %s server'%server
-    try:
-        await discClient.send_message(server.owner,msg)
-    except discord.Forbidden:
-        print ('There is permissions error')
+##    global serversDict
+##    msg = 'You have removed %s'%discClient.user.name+' from %s server'%server
+##    try:
+##        await discClient.send_message(server.owner,msg)
+##    except discord.Forbidden:
+##        print ('There is permissions error')
         
     #remove server dictionary if exist
     if server.id in serversDict:
@@ -907,9 +879,9 @@ async def on_server_join(server):
         ' permissions in order to ensure the bot fully works. It is recommended'+\
         ' to limit the bot to a particular channel(s) by banning it from reading messages in the unwanted channels '+\
         '(so as to not populate general channels with spam)\n'+\
-        '\nOnce permissions are set, use the command !start in any of the allowed channel(s) to initialize.'
-    msg2='Special commands for server owners:\n!deletebotmsg - Checks the most recent 100 messages and deletes ONLY the bot messages.'+\
-          '\n!deleteall - Purges the most recent 100 messages (regardless of user) in the current channel. Confirmation is required to purge.'
+        '\nOnce permissions are set, use the command ?start in any of the allowed channel(s) to initialize.'
+    msg2='Special commands for server owners:\n?deletebotmsg - Checks the most recent 100 messages and deletes ONLY the bot messages.'+\
+          '\n?deleteall - Purges the most recent 100 messages (regardless of user) in the current channel. Confirmation is required to purge.'
     print ('Bot added into: %s'%server,' %s'%server.id)
     try:
         await discClient.send_message(server.owner,msg)
