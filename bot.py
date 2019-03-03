@@ -1,6 +1,9 @@
 # Works with Python 3.6
-#3.7 does not play well with async/await
+#3.7 does not play well with async/await because of aiohttp
 
+##V1.0.6
+##-Last version for async before moving to rewrite
+##
 ##V1.0.5
 ##-Changed most of command prefix from ! to ? so as to not clash with most public bots
 ##  -To do: Change all to ?
@@ -130,8 +133,6 @@ def royalstyle(fupd):
     else:
         
         for row in values:
-            # Print columns I and I, which correspond to indices 0 and 0.
-            #print('%s, %s' % (row[0], row[0]))
             msg = msg + '\n' + ('%s'%row[0])
 
     em = discord.Embed(title=msgTitle, description=msg, colour=0x32FF32)
@@ -178,9 +179,7 @@ def goldenapple(fupd):
         msg = 'List not updated'
     else:
         
-        for row in values:
-            # Print columns I and I, which correspond to indices 0 and 0.
-            #print('%s, %s' % (row[0], row[0]))
+        for row in values:            
             msg = msg + '\n' + ('%s'%row[0])
 
     em = discord.Embed(title=msgTitle, description=msg, colour=0x32FF32)
@@ -545,7 +544,6 @@ async def on_message(message):
     
     if message.content.startswith('?help'):
         msg = 'Available commands:\n?help\n?hello\n?feedback\n?royalstyle\n?goldenapple\n?royalhair\n?events\n?info'
-        #msg = 'Available commands:\n!help\n!hello\n!test'
         await discClient.send_message(message.channel, msg)
 
     if message.content.startswith('!end'):
@@ -561,12 +559,6 @@ async def on_message(message):
         await discClient.send_message(message.channel,msg)
         serversDict[message.server.id][message.author.id]=message.timestamp
 
-##    if str.lower(message.content).startswith('?happy'):
-##        if ('valentines' in str.lower(message.content)):
-##            msg = 'Happy Valentines! '+'{0.author.mention}'.format(message)+':heart:'
-##            await discClient.send_message(message.channel,msg)
-##            return
-
     if message.content.startswith('?hello'):
         await discClient.send_typing(message.channel)
         if message.author.id in serversDict[message.server.id]:
@@ -578,14 +570,6 @@ async def on_message(message):
             msg = greetings(message,False)
         await discClient.send_message(message.channel, msg)
         serversDict[message.server.id][message.author.id]=message.timestamp
-        
-##    if message.content.startswith('?test'):
-##        if not (serverexist):            
-##            return
-##        await discClient.send_typing(message.channel)
-##        msg = 'This is a test message for {0.author.mention}'.format(message)        
-##        await discClient.send_message(message.channel, msg)
-##        serversDict[message.server.id][message.author.id]=message.timestamp
             
     if message.content.startswith('?royalstyle'):
         if not (serverexist):            
