@@ -2,6 +2,6 @@
 Discord bot made with Python using discord.py
 
 ### Work in progress
-Test Phase 2 to be started soon
 
-This readme will only be filled after rewrite
+v1.0.6 to be last version using async library.
+v2 will be rewritten to use rewrite branch of discord.py
