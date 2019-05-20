@@ -7,4 +7,4 @@ v1.0.6 (bot.py) to be final version using async library.
 
 v2.0.0 onwards utilizes the rewrite branch of discord.py
 
-Public release coming soon.
+Released to public
