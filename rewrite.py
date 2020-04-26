@@ -1,7 +1,15 @@
 ##Discord MsM LeeksBot
 ##
+##V2.4.1
+##-Command "codeword"
+##  -Added to help menu
+##  -Added link to table for monthly sheets
+##
+##V2.4.0
+##-Removed timestamping
+##-Added a msg to display when ?start have not been used when newly added into server
+##
 ##V2.3.0
-##Discord related:
 ##-To be removed/changed:
 ##  -Timestamps for ?hello command
 ##  -Replace global arrays
@@ -96,7 +104,7 @@ with open('config.json') as data_file:
 
 #Google APIs
 #-----------------------------------------
-SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 # The ID and range of spreadsheet.
 SPREADSHEET_ID = config['main_spreadsheet']
 EXPLORER_SHEETS_ID = config['xplorer_spreadsheet']
@@ -470,12 +478,11 @@ infoperiod=''
 
 
 #Used to store author and timestamps
-membersDict = {}
-serversDict = {}
+serversDict = []
 
 #check if server exist in dictionary, so as to not trigger yet until owner initiates
 def serverexist(m):
-        if (m.guild.id in serversDict):
+        if (str(m.guild.id) in serversDict):
             return True
         else:
             return False
@@ -486,26 +493,27 @@ def servererror(check):
     else:
         return
 
-@bot.event
-async def on_member_join(member):
-    global serversDict    
-    if not (member.id in serversDict[member.guild.id]):
-        tempdict = serversDict[member.guild.id]
-        tempdict[member.id]=datetime.datetime.utcnow()
-        serversDict[member.guild.id]=tempdict
+##@bot.event
+##async def on_member_join(member):
+##    global serversDict    
+##    if not (member.id in serversDict[member.guild.id]):
+##        tempdict = serversDict[member.guild.id]
+##        tempdict[member.id]=datetime.datetime.utcnow()
+##        serversDict[member.guild.id]=tempdict
         #print ('Added %s'%member.id+' to %s'%member.guild.id)
 
-@bot.event
-async def on_member_remove(member):
-    global serversDict
-    if (member.id in serversDict[member.guild.id]):
-        tempdict = serversDict[member.guild.id]
-        del tempdict[member.id]
-        serversDict[member.guild.id]=tempdict
+##@bot.event
+##async def on_member_remove(member):
+##    global serversDict
+##    if (member.id in serversDict[member.guild.id]):
+##        tempdict = serversDict[member.guild.id]
+##        del tempdict[member.id]
+##        serversDict[member.guild.id]=tempdict
         #print ('Removed %s'%member.id+' from %s'%member.guild.id)
         
 @bot.event
 async def on_guild_join(guild):
+    print (serversDict)
     msg = 'You are receiving this message as someone has added %s'%bot.user.name+' to %s server\n\n'%guild
     msg+='Permissions required are listed below: \n'+\
         'Read Messages\nSend Messages\nManage Messages\n'+\
@@ -533,25 +541,28 @@ async def on_guild_join(guild):
 
 @bot.event
 async def on_guild_remove(guild):
-    if guild.id in serversDict:
-        del serversDict[guild.id]
+    global serversDict
+    if str(guild.id) in serversDict:        
+        serversDict.remove(str(guild.id))
     print ('Bot removed from: %s'%guild,' %s'%guild.id)
+    print (serversDict)
     await bot.change_presence(activity=discord.Game("with farmers in "+str(len(bot.guilds))+" colonies"))
     
 @bot.event
 async def on_ready():
-    global membersDict,serversDict,fupdate
+    global serversDict,fupdate
     print('Logged in as')
     print(bot.user.name)
     print(bot.user.id)
     print('------')
 
     for g in bot.guilds:       
-        #Store only bot timestamp, other members to be stored dynamically
-        #tempdict[g.me.id]=datetime.datetime.utcnow()
-        membersDict = {}
-        membersDict[bot.user.id]=datetime.datetime.utcnow()
-        serversDict[g.id]=membersDict
+##        #Store only bot timestamp, other members to be stored dynamically
+##        #tempdict[g.me.id]=datetime.datetime.utcnow()
+##        membersDict = {}
+##        membersDict[bot.user.id]=datetime.datetime.utcnow()
+##        serversDict[g.id]=membersDict
+        serversDict.append(str(g.id))
         print(g.name)
         
     try:
@@ -568,24 +579,6 @@ async def on_ready():
     print ('Bot ready as of '+str(datetime.datetime.utcnow()))
     await bot.change_presence(activity=discord.Game("with farmers in "+str(len(bot.guilds))+" colonies"))
 
-##@bot.event
-##async def on_message(message):
-##    print (message.channel)
-##    if message.author.bot:
-##        return
-##    if (message.channel==discord.DMChannel):
-##        print ('in')
-##        msg = "\n"+message.content
-##        try:
-##            feedback=open('feedback.txt','a')
-##            feedback.write(str(msg))
-##            feedback.close()
-##        except:
-##            await message.channel.send('There was an error recording your request. Please try again later.')
-##            return
-##        await message.channel.send('Response recorded.')
-##        return
-##    await message.channel.send('rec')
     
 #Start of commands----------------------------------------------
 #check if initialized in server
@@ -595,7 +588,7 @@ async def initialstart(ctx):
         print ('Already initialized')
         return
     
-    global membersDict,serversDict
+    global serversDict
     if ((ctx.author!=ctx.guild.owner) and ctx.channel.permissions_for(ctx.author).administrator == False):
         await ctx.send('You do not have permissions to do that!')
         return
@@ -603,40 +596,39 @@ async def initialstart(ctx):
     if not (checkperms(ctx.guild.me,ctx.message.channel)):
         await ctx.send('Error in permissions. Make sure to assign a special role and required permissions to the bot.')
         return
-    print ('Initiated in '+ctx.guild.me.name)
-    #Store only bot timestamp, other members to be stored dynamically
-    membersDict = {}
-    membersDict[ctx.guild.me.id]=datetime.datetime.utcnow()
-    serversDict[ctx.guild.id]=membersDict  
+    print ('Initiated in '+ctx.guild.name) 
     msg = 'Leeks Seller can now do business :grin:'
     await ctx.send(msg)
     await ctx.send('Prefix for commands start with \? , enter \?help for available commands')
+    serversDict.append(str(ctx.guild.id))
 
 @bot.command(name='give',hidden=True,help='Vegetable',brief='')
 async def leeks(ctx,*arg):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     msg = 'I haz leeks... if you have shinies...'
     await ctx.send(msg)
 
 @bot.command(help='Hola! Bonjour! Konnichiwa! Please use English!',brief='')
 async def hello(ctx):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.channel.trigger_typing()
-    if ctx.author.id in serversDict[ctx.guild.id]:
-        if not (ctx.message.created_at - serversDict[ctx.guild.id][ctx.author.id])>datetime.timedelta(seconds=5):
-            msg = greetings(ctx.message,True)
-        else:        
-            msg = greetings(ctx.message,False)
-    else:
-        msg = greetings(ctx.message,False)
-    await ctx.send(msg)
-    serversDict[ctx.guild.id][ctx.author.id]=ctx.message.created_at    
+##    if ctx.author.id in serversDict[ctx.guild.id]:
+##        if not (ctx.message.created_at - serversDict[ctx.guild.id][ctx.author.id])>datetime.timedelta(seconds=5):
+##            msg = greetings(ctx.message,True)
+##        else:        
+##            msg = greetings(ctx.message,False)
+##    else:
+    msg = greetings(ctx.message,False)
+    await ctx.send(msg)  
 
 @bot.command(aliases=['royal','royals'],help='Upcoming Overpriced Clothing',brief='')
 async def royalstyle(ctx):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.channel.trigger_typing()
     em = rs(fupdate)
@@ -646,12 +638,12 @@ async def royalstyle(ctx):
     else:
         msg = '{0.author.mention}'.format(ctx.message)
         await ctx.send(content = msg, embed=em)
-    #serversDict[ctx.guild.id][ctx.author.id]=ctx.message.created_at
 
 
 @bot.command(aliases=['apple','gapple','goldapple'],help='Upcoming Poison Apple',brief='')
 async def goldenapple(ctx):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.channel.trigger_typing()
     em = ga(fupdate)
@@ -661,11 +653,11 @@ async def goldenapple(ctx):
     else:
         msg = '{0.author.mention}'.format(ctx.message)           
         await ctx.send(content=msg, embed=em)            
-    #serversDict[ctx.guild.id][ctx.author.id]=ctx.message.created_at
 
 @bot.command(aliases=['hair','face'],help='Upcoming Expensive Hair and Plastic Surgery',brief='')
 async def royalhair(ctx):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.channel.trigger_typing()
     em = rh(fupdate)
@@ -676,11 +668,11 @@ async def royalhair(ctx):
         msg = '{0.author.mention}'.format(ctx.message)
         
         await ctx.send(content=msg, embed=em)
-    #serversDict[ctx.guild.id][ctx.author.id]=ctx.message.created_at
 
 @bot.command(aliases=['event','package','packages'],help='Upcoming Events that have miserable rewards and Cash grabs to fund dev parties',brief='')
 async def events(ctx,*arg):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.channel.trigger_typing()
     #Check if arg exists
@@ -705,13 +697,13 @@ async def events(ctx,*arg):
 
 @bot.command(aliases=['information','lastupdate'],help='Data last updated and other general information',brief='')
 async def info(ctx):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.channel.trigger_typing()
     em = infocheck(fupdate)
     msg = '{0.author.mention}'.format(ctx.message)
     await ctx.send(content=msg, embed=em)
-    #serversDict[ctx.guild.id][ctx.author.id]=ctx.message.created_at
 
 @bot.command(aliases=['badbot','complain'],help='Not happy with me?',brief='')
 async def feedback(ctx):
@@ -719,7 +711,8 @@ async def feedback(ctx):
 
 @bot.command(aliases=['xtra'],help='Additional information for time-limited events',brief='',hidden=True)
 async def extra(ctx,*arg):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.channel.trigger_typing()
     if len(arg)==1:
@@ -738,13 +731,14 @@ async def extra(ctx,*arg):
         msg='{0.author.mention}'.format(ctx.message)
         await ctx.send(content=msg,embed=em)
 
-@bot.command(hidden=True,aliases=['updatesheet','updatesheets'])
+@bot.command(aliases=['updatesheet','updatesheets'],help='For monthly sheets (if any)\nHow to use codeword -> http://bit.ly/<codeword>')
 async def codeword(ctx):
-    await ctx.send('Codeword for '+config['cw_time']+' is '+config['cw_str'])
+    await ctx.send('Codeword for '+config['cw_time']+' is **'+config['cw_str']+'**\nFor list of past sheets: maintenancestory')
 
 @bot.command(hidden=True,name='temporary',aliases=list(config['xtracommand'].keys()),help='Redirector',brief='')
 async def temp(ctx):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     await ctx.send('You are trying to use a temporary command. Please use them as options in ?event <option>')
     
@@ -765,6 +759,8 @@ async def forceupdate(ctx):
     if not ctx.author.id == BOT_OWNER_ID:
         await ctx.message.delete()
         return
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
     try:
         rs(True)
         print('rs')
@@ -782,6 +778,8 @@ async def forceupdate(ctx):
         await ctx.send('There was an error refreshing data')
         await ctx.message.delete()
         fupdate=True
+        await bot.change_presence(activity=discord.Game("with farmers in "+str(len(bot.guilds))+" colonies"))
+        return
     await bot.change_presence(activity=discord.Game("with farmers in "+str(len(bot.guilds))+" colonies"))
     await ctx.send('Force update successful')
     await ctx.message.delete()
@@ -850,9 +848,10 @@ async def end(ctx):
     else:
         await ctx.send('{0.author.mention}, looks like you don\'t have permission to do that'.format(ctx.message))
 
-@bot.command(help='No arg = Delete all\n\'bot\' arg = Delete only messages from this bot',brief='Owner/Admins only')
+@bot.command(help='No arg = Delete all\n\'bot\' arg = Delete bot messages\nLimit is 50 messages per command',brief='Owner/Admins only')
 async def deletemsg(ctx,*arg):
-    if not (serverexist(ctx.message)):            
+    if not (serverexist(ctx.message)):
+        await ctx.send('I need the owner/admin to check permissions with ?start to work :pensive:')
         return
     if (ctx.author == ctx.guild.owner) or ctx.channel.permissions_for(ctx.author).administrator:
         perms = ctx.channel.permissions_for(ctx.guild.me)
