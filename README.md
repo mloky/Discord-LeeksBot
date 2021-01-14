@@ -6,8 +6,6 @@ March 2019 - Released to public.
 ### Status
 Live Version: 2.4.1
 
-&nbsp;
-
 Test Version: 2.5.0
 
 ### Versions
