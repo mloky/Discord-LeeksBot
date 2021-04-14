@@ -4,9 +4,7 @@ Python Discord bot for MSM, using discord.py
 March 2019 - Released to public. 
 
 ### Status
-Live Version: 2.4.1
-
-Test Version: 2.5.0
+Live Version: 2.5.0
 
 ### Versions
 
